@@ -1,0 +1,21 @@
+export default () => ({
+  port: parseInt(process.env.PORT ?? '8000', 10),
+  nodeEnv: process.env.NODE_ENV ?? 'development',
+  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+  siteUrl: process.env.SITE_URL ?? 'http://localhost:3000',
+  mongodbUri: process.env.MONGODB_URI ?? 'memory',
+  redisUrl: process.env.REDIS_URL ?? '',
+  cloudflare: {
+    accountId: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY ?? '',
+    bucket: process.env.CLOUDFLARE_R2_BUCKET ?? 'kalibri-media',
+    publicUrl: process.env.CLOUDFLARE_R2_PUBLIC_URL ?? '',
+    endpoint: process.env.CLOUDFLARE_R2_ENDPOINT ?? '',
+  },
+  cacheTtlSeconds: parseInt(process.env.CACHE_TTL_SECONDS ?? '60', 10),
+  telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+  jwtSecret: process.env.JWT_SECRET ?? 'dev-insecure-secret',
+  adminPhone: process.env.ADMIN_PHONE ?? '+998947932005',
+  authCodeTtlSeconds: parseInt(process.env.AUTH_CODE_TTL_SECONDS ?? '300', 10),
+});
