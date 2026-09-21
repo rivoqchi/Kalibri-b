@@ -5,8 +5,10 @@ import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const nestJs = join(root, 'node_modules', '@nestjs', 'cli', 'bin', 'nest.js');
 const nestBin = join(root, 'node_modules', '.bin', 'nest');
 const nestBinCmd = join(root, 'node_modules', '.bin', 'nest.cmd');
+
 let nestResolved = null;
 try {
   nestResolved = require.resolve('@nestjs/cli/package.json');
@@ -35,19 +37,21 @@ const payload = {
   message: 'prebuild nest CLI + build types check',
   data: {
     nodeEnv: process.env.NODE_ENV ?? null,
+    nestJsExists: existsSync(nestJs),
     nestBinExists: existsSync(nestBin) || existsSync(nestBinCmd),
     nestCliResolved: nestResolved,
     typesNodeResolved: typesNode,
     typesExpressResolved: typesExpress,
-    ok: Boolean(nestResolved && typesNode && typesExpress),
+    ok: Boolean(nestResolved && typesNode && typesExpress && existsSync(nestJs)),
   },
   timestamp: Date.now(),
 };
 
+// Visible on Render build logs (runtime evidence)
+console.log('[prebuild]', JSON.stringify(payload.data));
+
 // #region agent log
-const logUrl =
-  'http://127.0.0.1:7898/ingest/841f1275-974c-4ae8-9d0d-4af60275142b';
-fetch(logUrl, {
+fetch('http://127.0.0.1:7898/ingest/841f1275-974c-4ae8-9d0d-4af60275142b', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -66,7 +70,7 @@ try {
 }
 // #endregion
 
-if (!nestResolved) {
+if (!nestResolved || !existsSync(nestJs)) {
   console.error(
     '@nestjs/cli missing after install. Ensure it is in dependencies (not only devDependencies) for production builds.',
   );
