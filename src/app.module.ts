@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import configuration from './config/configuration.js';
@@ -23,6 +24,7 @@ import { SeoModule } from './seo/seo.module.js';
 import { MediaModule } from './media/media.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { HealthModule } from './health/health.module.js';
+import { PingModule } from './ping/ping.module.js';
 import { SeedModule } from './seed/seed.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UsersModule } from './users/users.module.js';
@@ -36,6 +38,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
       isGlobal: true,
       load: [configuration],
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => {
@@ -125,6 +128,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
     SeoModule,
     MediaModule,
     HealthModule,
+    PingModule,
     SeedModule,
     UsersModule,
     AuthModule,

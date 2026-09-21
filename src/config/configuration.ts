@@ -57,4 +57,36 @@ export default () => ({
     process.env.ADMIN_PHONE ??
     '+998947932005',
   authCodeTtlSeconds: parseInt(process.env.AUTH_CODE_TTL_SECONDS ?? '300', 10),
+  ping: {
+    /**
+     * Keep-alive self-ping. Default on in production; set PING_ENABLED=false to disable.
+     * External cron (Render Cron / cron-job.org) can also hit GET /api/ping.
+     */
+    enabled: resolvePingEnabled(),
+    cron: process.env.PING_CRON?.trim() || '*/10 * * * *',
+    url: resolvePingUrl(),
+  },
 });
+
+function resolvePingEnabled(): boolean {
+  const raw = process.env.PING_ENABLED?.trim().toLowerCase();
+  if (raw === 'true' || raw === '1') return true;
+  if (raw === 'false' || raw === '0') return false;
+  return (process.env.NODE_ENV ?? 'development') === 'production';
+}
+
+function resolvePingUrl(): string {
+  const explicit = process.env.PING_URL?.trim();
+  if (explicit) return explicit;
+
+  const base =
+    process.env.PUBLIC_API_URL?.trim() ||
+    process.env.RENDER_EXTERNAL_URL?.trim() ||
+    '';
+  if (base) {
+    return `${base.replace(/\/$/, '')}/api/ping`;
+  }
+
+  const port = process.env.PORT ?? '8000';
+  return `http://127.0.0.1:${port}/api/ping`;
+}
