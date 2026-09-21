@@ -11,7 +11,7 @@
   },
   "scripts": {
     "prebuild": "node scripts/check-nest-cli.mjs",
-    "build": "node ./node_modules/@nestjs/cli/bin/nest.js build",
+    "build": "tsc -p tsconfig.build.json",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "node dist/main.js",
