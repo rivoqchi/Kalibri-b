@@ -131,12 +131,20 @@ try {
   await bootstrap();
 } catch (error) {
   // #region agent log
+  const message = error instanceof Error ? error.message : String(error);
+  const isTls =
+    /SSL|TLS|CERT|ECONNREFUSED|ServerSelection|whitelist|IP/i.test(message) ||
+    (error as { cause?: { code?: string } })?.cause?.code ===
+      'ERR_SSL_TLSV1_ALERT_INTERNAL_ERROR';
   console.error(
     '[boot-fatal]',
     JSON.stringify({
-      hypothesisId: 'H3',
+      hypothesisId: isTls ? 'H9' : 'H3',
       name: error instanceof Error ? error.name : 'unknown',
-      message: error instanceof Error ? error.message : String(error),
+      message,
+      hint: isTls
+        ? 'Atlas Network Access must allow 0.0.0.0/0 (Render IPs change). Also verify MONGODB_URI user/password URL-encoding.'
+        : undefined,
     }),
   );
   // #endregion

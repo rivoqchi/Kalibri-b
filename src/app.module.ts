@@ -59,6 +59,7 @@ import { NotificationsModule } from './notifications/notifications.module.js';
           minPoolSize: mode === 'memory' ? 1 : 5,
           // Render/Node 17+ may prefer IPv6; Atlas TLS often needs IPv4.
           family: 4,
+          autoSelectFamily: false,
           serverSelectionTimeoutMS: 15_000,
           autoIndex: true,
         };
