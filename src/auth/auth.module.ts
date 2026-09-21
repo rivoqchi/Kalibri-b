@@ -37,6 +37,7 @@ import { AUTH_BOT_API } from './auth-bot.api.js';
   exports: [
     UsersModule,
     AuthService,
+    TelegramBotService,
     JwtTokenService,
     JwtAuthGuard,
     OptionalJwtAuthGuard,

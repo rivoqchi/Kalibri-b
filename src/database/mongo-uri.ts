@@ -17,6 +17,27 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
   const nodeEnv = process.env.NODE_ENV ?? 'development';
 
   if (!useMemory) {
+    const schemeOk =
+      configuredUri.startsWith('mongodb://') ||
+      configuredUri.startsWith('mongodb+srv://');
+    if (!schemeOk) {
+      const preview = configuredUri.slice(0, 24);
+      console.error(
+        '[boot]',
+        JSON.stringify({
+          hypothesisId: 'H21',
+          mongo: 'invalid_scheme',
+          message:
+            'MONGODB_URI must start with mongodb:// or mongodb+srv://. Nest will start but Mongo stays down — Telegram handlers that need DB will fail until fixed.',
+          preview,
+        }),
+      );
+      logger.error(
+        `Invalid MONGODB_URI scheme (expected mongodb:// or mongodb+srv://). Got prefix: ${preview}`,
+      );
+      // Do not throw — keep Nest + Telegram polling alive; health reports mongo:down.
+    }
+
     let host = '(unparsed)';
     try {
       host = new URL(configuredUri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;

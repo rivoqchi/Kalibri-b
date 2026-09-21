@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
+import { TelegramBotService } from '../auth/telegram-bot.service.js';
 import { CacheService } from '../cache/cache.module.js';
 import { agentDebugLog } from '../common/utils/agent-debug-log.js';
 
@@ -9,17 +10,21 @@ export class HealthController {
   constructor(
     @InjectConnection() private readonly connection: mongoose.Connection,
     private readonly cache: CacheService,
+    private readonly telegramBot: TelegramBotService,
   ) {}
 
   @Get()
   async check() {
     const mongoOk = this.connection.readyState === 1;
     const redisOk = Boolean(this.cache.getRedisClient()?.status === 'ready');
+    const telegramReady = this.telegramBot.isReady();
 
     return {
-      status: mongoOk ? 'ok' : 'degraded',
+      status: mongoOk && telegramReady ? 'ok' : 'degraded',
       mongo: mongoOk ? 'up' : 'down',
       redis: redisOk ? 'up' : 'memory-fallback',
+      telegram: telegramReady ? 'up' : 'down',
+      telegramBot: this.telegramBot.getBotUsername(),
       timestamp: new Date().toISOString(),
     };
   }

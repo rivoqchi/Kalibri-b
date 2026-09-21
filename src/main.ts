@@ -62,6 +62,12 @@ await new Promise<void>((resolve, reject) => {
 });
 
 // #region agent log
+const mongoUri = process.env.MONGODB_URI?.trim() ?? '';
+const mongoSchemeOk =
+  !mongoUri ||
+  mongoUri === 'memory' ||
+  mongoUri.startsWith('mongodb://') ||
+  mongoUri.startsWith('mongodb+srv://');
 console.log(
   '[boot]',
   JSON.stringify({
@@ -70,7 +76,13 @@ console.log(
     port,
     beforeNestImport: true,
     hasJwtSecret: Boolean(process.env.JWT_SECRET?.trim()),
-    hasMongoUri: Boolean(process.env.MONGODB_URI?.trim()),
+    hasMongoUri: Boolean(mongoUri),
+    mongoSchemeOk,
+    hasTelegramBotToken: Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim()),
+    hasTelegramWebAppUrl: Boolean(
+      process.env.TELEGRAM_WEBAPP_URL?.trim() ||
+        process.env.FRONTEND_URL?.trim(),
+    ),
   }),
 );
 // #endregion
