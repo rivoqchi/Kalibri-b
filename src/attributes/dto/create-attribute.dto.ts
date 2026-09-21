@@ -1,4 +1,5 @@
-import { IsString } from 'class-validator';
+import { IsIn, IsString } from 'class-validator';
+import { ATTRIBUTE_UNITS } from '../attribute-units.js';
 
 export class CreateAttributeDto {
   @IsString()
@@ -6,4 +7,7 @@ export class CreateAttributeDto {
 
   @IsString()
   value!: string;
+
+  @IsIn(ATTRIBUTE_UNITS)
+  unit!: string;
 }

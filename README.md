@@ -32,6 +32,24 @@ API: `http://localhost:8000`
 Realtime: `ws://localhost:8000/realtime`  
 Health: `GET /api/health`
 
+## Environment
+
+Copy `.env.example` → `.env`. Key vars:
+
+| Variable | Purpose |
+|----------|---------|
+| `PORT` | HTTP listen port |
+| `FRONTEND_URL` / `CORS_ORIGIN` | Frontend origin(s) for CORS (comma-separated) |
+| `SITE_URL` | Canonical base for SEO payloads |
+| `TELEGRAM_WEBAPP_URL` | HTTPS Mini App URL (falls back to `FRONTEND_URL`) |
+| `MONGODB_URI` | Mongo connection, or `memory` for local |
+| `REDIS_URL` | Optional Redis (cache + Socket.IO adapter) |
+| `JWT_SECRET` | Auth signing key (**required in production**) |
+| `TELEGRAM_BOT_TOKEN` | Bot API token |
+| `CLOUDFLARE_R2_*` | Media upload / public CDN |
+
+See `.env.example` for the full list and comments.
+
 ## Main endpoints
 
 - `GET /api/products?q=&sort=price_asc|newest|bestseller|relevance`

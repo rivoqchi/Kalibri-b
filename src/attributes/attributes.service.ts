@@ -22,23 +22,26 @@ export class AttributesService {
       id: String(doc._id),
       name: doc.name,
       value: doc.value,
+      unit: doc.unit ?? '',
       slug: doc.slug,
       isActive: doc.isActive,
     };
   }
 
-  private makeSlug(name: string, value: string) {
-    return toSlug(`${name}-${value}`);
+  private makeSlug(name: string, value: string, unit: string) {
+    return toSlug(unit ? `${name}-${value}-${unit}` : `${name}-${value}`);
   }
 
   async create(dto: CreateAttributeDto) {
     const name = dto.name.trim();
     const value = dto.value.trim();
-    const slug = this.makeSlug(name, value);
+    const unit = dto.unit.trim();
+    const slug = this.makeSlug(name, value, unit);
     try {
       const created = await this.attributeModel.create({
         name,
         value,
+        unit,
         slug,
       });
       return this.map(created);
@@ -72,7 +75,9 @@ export class AttributesService {
 
     if (dto.name !== undefined) doc.name = dto.name.trim();
     if (dto.value !== undefined) doc.value = dto.value.trim();
-    doc.slug = this.makeSlug(doc.name, doc.value);
+    if (dto.unit !== undefined) doc.unit = dto.unit.trim();
+    if (dto.isActive !== undefined) doc.isActive = dto.isActive;
+    doc.slug = this.makeSlug(doc.name, doc.value, doc.unit ?? '');
 
     try {
       await doc.save();

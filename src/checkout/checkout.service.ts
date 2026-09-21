@@ -16,7 +16,9 @@ export class CheckoutService {
   async create(sessionId: string, dto: CreateCheckoutDto) {
     if (!sessionId) throw new BadRequestException('x-session-id header required');
 
-    const cart = await this.cartModel.findOne({ sessionId }).exec();
+    const cart = await this.cartModel
+      .findOne({ sessionId, userId: { $exists: false } })
+      .exec();
     if (!cart || cart.items.length === 0) {
       throw new BadRequestException('Cart is empty');
     }

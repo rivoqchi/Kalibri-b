@@ -58,6 +58,7 @@ export class BrandsService {
 
     if (dto.name !== undefined) doc.name = dto.name;
     if (dto.imageUrl !== undefined) doc.imageUrl = dto.imageUrl;
+    if (dto.isActive !== undefined) doc.isActive = dto.isActive;
     if (dto.slug !== undefined) {
       doc.slug = toSlug(dto.slug);
     } else if (dto.name !== undefined) {

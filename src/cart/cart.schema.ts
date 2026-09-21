@@ -4,6 +4,18 @@ import { HydratedDocument } from 'mongoose';
 export type CartDocument = HydratedDocument<Cart>;
 
 @Schema({ _id: false })
+export class CartMoneyEmbedded {
+  @Prop({ required: true })
+  amount!: number;
+
+  @Prop({ required: true, default: 'UZS' })
+  currency!: string;
+}
+
+export const CartMoneyEmbeddedSchema =
+  SchemaFactory.createForClass(CartMoneyEmbedded);
+
+@Schema({ _id: false })
 export class CartItemEmbedded {
   @Prop({ required: true })
   productId!: string;
@@ -17,14 +29,8 @@ export class CartItemEmbedded {
   @Prop({ required: true, min: 1 })
   quantity!: number;
 
-  @Prop({
-    type: {
-      amount: { type: Number, required: true },
-      currency: { type: String, required: true, default: 'UZS' },
-    },
-    required: true,
-  })
-  unitPrice!: { amount: number; currency: string };
+  @Prop({ type: CartMoneyEmbeddedSchema, required: true })
+  unitPrice!: CartMoneyEmbedded;
 
   @Prop()
   imageUrl?: string;
@@ -32,11 +38,29 @@ export class CartItemEmbedded {
 
 @Schema({ timestamps: true, collection: 'carts' })
 export class Cart {
-  @Prop({ required: true, unique: true, index: true })
-  sessionId!: string;
+  @Prop()
+  userId?: string;
+
+  @Prop()
+  sessionId?: string;
 
   @Prop({ type: [CartItemEmbedded], default: [] })
   items!: CartItemEmbedded[];
 }
 
 export const CartSchema = SchemaFactory.createForClass(Cart);
+
+CartSchema.index(
+  { userId: 1 },
+  { unique: true, partialFilterExpression: { userId: { $type: 'string' } } },
+);
+CartSchema.index(
+  { sessionId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      sessionId: { $type: 'string' },
+      userId: { $exists: false },
+    },
+  },
+);

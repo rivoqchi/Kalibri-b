@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { USER_ROLES, type UserRole } from './user-role.js';
 
+export type { UserRole };
 export type UserDocument = HydratedDocument<User>;
-
-export type UserRole = 'user' | 'admin';
 
 @Schema({ timestamps: true, collection: 'users' })
 export class User {
@@ -22,8 +22,26 @@ export class User {
   @Prop({ trim: true, index: true })
   phone?: string;
 
-  @Prop({ required: true, enum: ['user', 'admin'], default: 'user', index: true })
+  @Prop({ required: true, enum: USER_ROLES, default: 'user', index: true })
   role!: UserRole;
+
+  @Prop({ trim: true })
+  photoUrl?: string;
+
+  @Prop({ trim: true })
+  telegramPhotoFileId?: string;
+
+  @Prop({ default: false })
+  photoCustom?: boolean;
+
+  @Prop({ type: Buffer, select: false })
+  photoBuffer?: Buffer;
+
+  @Prop({ trim: true, select: false })
+  photoContentType?: string;
+
+  @Prop({ default: false, index: true })
+  isBlocked!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

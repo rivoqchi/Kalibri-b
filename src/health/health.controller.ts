@@ -1,7 +1,8 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { CacheService } from '../cache/cache.module.js';
+import { agentDebugLog } from '../common/utils/agent-debug-log.js';
 
 @Controller('api/health')
 export class HealthController {
@@ -12,28 +13,6 @@ export class HealthController {
 
   @Get()
   async check() {
-    // #region agent log
-    fetch('http://127.0.0.1:7580/ingest/34e913d6-8720-4f4c-8d69-15c2fc7de272', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': 'de3394',
-      },
-      body: JSON.stringify({
-        sessionId: 'de3394',
-        runId: 'post-fix',
-        hypothesisId: 'A',
-        location: 'health.controller.ts:check',
-        message: 'health check executed after Connection import fix',
-        data: {
-          readyState: this.connection.readyState,
-          redisStatus: this.cache.getRedisClient()?.status ?? 'memory-fallback',
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-
     const mongoOk = this.connection.readyState === 1;
     const redisOk = Boolean(this.cache.getRedisClient()?.status === 'ready');
 
@@ -43,5 +22,29 @@ export class HealthController {
       redis: redisOk ? 'up' : 'memory-fallback',
       timestamp: new Date().toISOString(),
     };
+  }
+
+  /** Temporary client→file debug bridge (session 51bb44). */
+  @Post('client-log')
+  clientLog(
+    @Body()
+    body: {
+      hypothesisId?: string;
+      location?: string;
+      message?: string;
+      data?: Record<string, unknown>;
+      runId?: string;
+    },
+  ) {
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: body?.hypothesisId ?? 'UI',
+      location: body?.location ?? 'client',
+      message: body?.message ?? 'client-log',
+      data: body?.data ?? {},
+      runId: body?.runId ?? 'post-fix',
+    });
+    // #endregion
+    return { ok: true };
   }
 }

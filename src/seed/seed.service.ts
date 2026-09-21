@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Category, CategoryDocument } from '../categories/category.schema.js';
@@ -11,9 +12,15 @@ export class SeedService implements OnModuleInit {
   constructor(
     @InjectModel(Category.name) private readonly categoryModel: Model<CategoryDocument>,
     @InjectModel(Product.name) private readonly productModel: Model<ProductDocument>,
+    private readonly config: ConfigService,
   ) {}
 
   async onModuleInit() {
+    if (!this.config.get<boolean>('seedDemoCatalog')) {
+      this.logger.log('Demo catalog seed o‘chiq (SEED_DEMO_CATALOG=false)');
+      return;
+    }
+
     const count = await this.productModel.estimatedDocumentCount();
     if (count > 0) return;
 
@@ -38,9 +45,12 @@ export class SeedService implements OnModuleInit {
       },
     ]);
 
+    const newExpiresAt = new Date(Date.now() + 50 * 24 * 60 * 60 * 1000);
+
     await this.productModel.create([
       {
         name: 'Apple MacBook Pro M4',
+        code: 'MBP-M4-001',
         slug: 'apple-macbook-pro-m4',
         description: 'Yangi MacBook Pro M4 — professional ish yuklari uchun.',
         price: { amount: 28_500_000, currency: 'UZS' },
@@ -48,9 +58,12 @@ export class SeedService implements OnModuleInit {
         modelName: 'MacBook Pro M4',
         categoryId: laptops._id,
         categorySlug: 'noutbuklar',
+        stockUnlimited: true,
         inStock: true,
-        stockQty: 12,
+        stockQty: 0,
         isNewArrival: true,
+        statusTags: ['new'],
+        newExpiresAt,
         soldCount: 40,
         searchTags: ['macbook m4 yangisi', 'apple laptop', 'm4 pro'],
         seoTitle: 'MacBook Pro M4 yangisi — narxi | Kalibri Texnika',
@@ -60,6 +73,7 @@ export class SeedService implements OnModuleInit {
       },
       {
         name: 'Budget Office Laptop 15',
+        code: 'BOL-15-001',
         slug: 'budget-office-laptop-15',
         description: 'Kundalik ishlar uchun eng arzon noutbuk.',
         price: { amount: 4_200_000, currency: 'UZS' },
@@ -67,9 +81,11 @@ export class SeedService implements OnModuleInit {
         modelName: 'Office 15',
         categoryId: laptops._id,
         categorySlug: 'noutbuklar',
+        stockUnlimited: true,
         inStock: true,
-        stockQty: 50,
+        stockQty: 0,
         isNewArrival: false,
+        statusTags: ['very_cheap'],
         soldCount: 210,
         searchTags: ['eng arzon noutbuk', 'budget laptop', 'arzon noutbuk'],
         seoTitle: 'Eng arzon noutbuk — Office 15 | Kalibri Texnika',
@@ -79,6 +95,7 @@ export class SeedService implements OnModuleInit {
       },
       {
         name: 'Samsung Galaxy S25',
+        code: 'SGS-25-001',
         slug: 'samsung-galaxy-s25',
         description: 'Yangi flagman smartfon.',
         price: { amount: 12_900_000, currency: 'UZS' },
@@ -86,9 +103,12 @@ export class SeedService implements OnModuleInit {
         modelName: 'Galaxy S25',
         categoryId: phones._id,
         categorySlug: 'telefonlar',
+        stockUnlimited: true,
         inStock: true,
-        stockQty: 30,
+        stockQty: 0,
         isNewArrival: true,
+        statusTags: ['new'],
+        newExpiresAt,
         soldCount: 95,
         searchTags: ['samsung s25 yangisi', 'flagman telefon'],
         seoKeywords: ['Samsung S25 yangisi', 'Galaxy S25'],

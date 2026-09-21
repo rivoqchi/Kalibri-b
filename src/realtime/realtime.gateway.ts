@@ -94,6 +94,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
     this.server.emit('order:created', { sessionId, order });
   }
 
+  emitNotificationCreated(notification: unknown) {
+    this.server.emit('notification:created', notification);
+  }
+
   emitPriceChanged(payload: unknown) {
     this.server.emit('price:changed', payload);
   }

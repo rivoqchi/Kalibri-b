@@ -11,6 +11,9 @@ export class Attribute {
   @Prop({ required: true, trim: true })
   value!: string;
 
+  @Prop({ default: '', trim: true })
+  unit!: string;
+
   @Prop({ required: true, unique: true, index: true, lowercase: true })
   slug!: string;
 
@@ -19,4 +22,4 @@ export class Attribute {
 }
 
 export const AttributeSchema = SchemaFactory.createForClass(Attribute);
-AttributeSchema.index({ name: 1, value: 1 }, { unique: true });
+AttributeSchema.index({ name: 1, value: 1, unit: 1 }, { unique: true });

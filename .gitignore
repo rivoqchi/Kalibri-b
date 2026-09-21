@@ -5,10 +5,9 @@
 /dist
 /coverage
 
-# Env
+# Env — keep examples trackable
 .env
-.env.local
-.env.*.local
+.env.*
 !.env.example
 
 # Logs / OS

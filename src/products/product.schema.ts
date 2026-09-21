@@ -17,14 +17,21 @@ export class Product {
   @Prop({ required: true, trim: true })
   name!: string;
 
+  @Prop({ required: true, unique: true, index: true, trim: true })
+  code!: string;
+
   @Prop({ required: true, unique: true, index: true, lowercase: true })
   slug!: string;
 
-  @Prop({ trim: true })
+  @Prop({ trim: false })
   description?: string;
 
   @Prop({ type: MoneyEmbedded, required: true })
   price!: MoneyEmbedded;
+
+  /** Skidka / aksiya narxi (ixtiyoriy). */
+  @Prop({ type: MoneyEmbedded })
+  salePrice?: MoneyEmbedded;
 
   @Prop({ trim: true })
   imageUrl?: string;
@@ -44,6 +51,10 @@ export class Product {
   @Prop({ trim: true, index: true })
   modelName?: string;
 
+  /** true = cheksiz (unlimited); stockQty ignored for availability */
+  @Prop({ default: true, index: true })
+  stockUnlimited!: boolean;
+
   @Prop({ default: true, index: true })
   inStock!: boolean;
 
@@ -58,6 +69,18 @@ export class Product {
 
   @Prop({ default: false, index: true })
   isNewArrival!: boolean;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Attribute', default: [], index: true })
+  attributeIds!: Types.ObjectId[];
+
+  @Prop({ type: [String], default: [], index: true })
+  statusTags!: string[];
+
+  @Prop({ type: Date })
+  newExpiresAt?: Date;
+
+  @Prop({ type: Date })
+  seasonalExpiresAt?: Date;
 
   /** Free-text tokens for Uzbek/Russian search intents */
   @Prop({ type: [String], default: [], index: true })
@@ -82,6 +105,7 @@ ProductSchema.index({
   modelName: 'text',
   searchTags: 'text',
   seoKeywords: 'text',
+  code: 'text',
 });
 
 ProductSchema.index({ 'price.amount': 1, categorySlug: 1, inStock: 1 });

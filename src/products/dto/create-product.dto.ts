@@ -1,13 +1,18 @@
 import {
   IsArray,
   IsBoolean,
+  IsIn,
+  IsInt,
+  IsMongoId,
   IsNumber,
   IsOptional,
   IsString,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PRODUCT_STATUS_TAGS } from '../product-status.constants.js';
 
 class MoneyDto {
   @IsNumber()
@@ -22,6 +27,9 @@ export class CreateProductDto {
   @IsString()
   name!: string;
 
+  @IsString()
+  code!: string;
+
   @IsOptional()
   @IsString()
   slug?: string;
@@ -33,6 +41,11 @@ export class CreateProductDto {
   @ValidateNested()
   @Type(() => MoneyDto)
   price!: MoneyDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MoneyDto)
+  salePrice?: MoneyDto;
 
   @IsOptional()
   @IsString()
@@ -55,18 +68,39 @@ export class CreateProductDto {
   @IsString()
   modelName?: string;
 
+  /** cheksiz — when true, stockQty is ignored */
+  @IsOptional()
+  @IsBoolean()
+  stockUnlimited?: boolean;
+
   @IsOptional()
   @IsBoolean()
   inStock?: boolean;
 
-  @IsOptional()
-  @IsNumber()
+  @ValidateIf((o: CreateProductDto) => o.stockUnlimited === false)
+  @IsInt()
   @Min(0)
   stockQty?: number;
 
   @IsOptional()
   @IsBoolean()
   isNewArrival?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsMongoId({ each: true })
+  attributeIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @IsIn([...PRODUCT_STATUS_TAGS], { each: true })
+  statusTags?: string[];
+
+  @ValidateIf((o: CreateProductDto) => (o.statusTags ?? []).includes('seasonal'))
+  @IsInt()
+  @Min(1)
+  seasonalDays?: number;
 
   @IsOptional()
   @IsArray()

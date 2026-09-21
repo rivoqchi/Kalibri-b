@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SignJWT, jwtVerify } from 'jose';
+import { parseUserRole } from '../users/user-role.js';
 
 export type JwtPayload = {
   sub: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'admin' | 'super_admin';
   telegramId: number;
 };
 
@@ -25,7 +26,7 @@ export class JwtTokenService {
       .setProtectedHeader({ alg: 'HS256' })
       .setSubject(payload.sub)
       .setIssuedAt()
-      .setExpirationTime('365d')
+      .setExpirationTime('10y')
       .sign(this.secret);
   }
 
@@ -35,7 +36,7 @@ export class JwtTokenService {
     if (!sub || typeof sub !== 'string') {
       throw new Error('Invalid token subject');
     }
-    const role = payload.role === 'admin' ? 'admin' : 'user';
+    const role = parseUserRole(payload.role);
     const telegramId = Number(payload.telegramId);
     if (!Number.isFinite(telegramId)) {
       throw new Error('Invalid telegramId');
