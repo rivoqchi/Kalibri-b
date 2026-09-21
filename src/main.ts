@@ -96,7 +96,8 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  if (await isPortInUse(port)) {
+  // Port probe races on PaaS; only useful for local single-instance checks.
+  if (nodeEnv !== 'production' && (await isPortInUse(port))) {
     console.error(
       `[Kalibri] Port ${port} is already in use. Another API instance is running — stop it first (only one \`npm run start:dev\`).`,
     );
@@ -104,7 +105,8 @@ async function bootstrap() {
   }
 
   try {
-    await app.listen(port);
+    // Render requires binding 0.0.0.0 (not only localhost).
+    await app.listen(port, '0.0.0.0');
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === 'EADDRINUSE') {
       console.error(
