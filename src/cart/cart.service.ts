@@ -27,6 +27,11 @@ export class CartService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Do not block Nest listen() on Atlas/mongo availability.
+    void this.dropLegacySessionIndex();
+  }
+
+  private async dropLegacySessionIndex() {
     // Legacy unique index from session-only schema blocks user carts.
     try {
       await this.cartModel.collection.dropIndex('sessionId_1');

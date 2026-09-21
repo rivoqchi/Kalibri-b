@@ -125,7 +125,12 @@ export class SeoService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seedTemplates();
+    // Do not block Nest listen() while Mongo/Atlas TLS is still connecting.
+    void this.seedTemplates().catch((error: unknown) => {
+      this.logger.warn(
+        `SEO template seed deferred/failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    });
   }
 
   private applyTemplate(template: string, vars: TemplateVars): string {

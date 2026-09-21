@@ -26,6 +26,11 @@ export class FavoritesService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    // Do not block Nest listen() on Atlas/mongo availability.
+    void this.dropLegacySessionIndex();
+  }
+
+  private async dropLegacySessionIndex() {
     try {
       await this.favoritesModel.collection.dropIndex('sessionId_1');
     } catch {

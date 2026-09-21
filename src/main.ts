@@ -46,9 +46,27 @@ async function bootstrap() {
   }).catch(() => {});
   // #endregion
 
+  // #region agent log
+  console.log(
+    '[boot]',
+    JSON.stringify({
+      hypothesisId: 'H17',
+      message: 'NestFactory.create starting (onModuleInit must not await mongo)',
+    }),
+  );
+  // #endregion
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
+  // #region agent log
+  console.log(
+    '[boot]',
+    JSON.stringify({
+      hypothesisId: 'H17',
+      message: 'NestFactory.create done',
+    }),
+  );
+  // #endregion
 
   const config = app.get(ConfigService);
   const port = config.get<number>('port') ?? 8000;
