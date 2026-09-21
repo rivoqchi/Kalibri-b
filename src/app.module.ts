@@ -45,10 +45,11 @@ import { NotificationsModule } from './notifications/notifications.module.js';
         console.log(
           '[boot]',
           JSON.stringify({
-            hypothesisId: 'H14',
+            hypothesisId: 'H15',
             message: 'mongoose connect options',
             mode,
             family: 4,
+            lazyConnection: true,
             serverSelectionTimeoutMS: 15_000,
           }),
         );
@@ -61,6 +62,42 @@ import { NotificationsModule } from './notifications/notifications.module.js';
           family: 4,
           autoSelectFamily: false,
           serverSelectionTimeoutMS: 15_000,
+          // Do not block Nest listen on Atlas TLS — health can report mongo down.
+          lazyConnection: true,
+          connectionFactory: (connection: {
+            on: (event: string, cb: (...args: unknown[]) => void) => void;
+            readyState: number;
+          }) => {
+            connection.on('connected', () => {
+              console.log(
+                '[boot]',
+                JSON.stringify({
+                  hypothesisId: 'H15',
+                  mongo: 'connected',
+                  readyState: connection.readyState,
+                }),
+              );
+            });
+            connection.on('error', (err: unknown) => {
+              const message =
+                err instanceof Error ? err.message : String(err);
+              const isTls = /SSL|TLS|whitelist|IP|ServerSelection/i.test(
+                message,
+              );
+              console.error(
+                '[boot]',
+                JSON.stringify({
+                  hypothesisId: isTls ? 'H9' : 'H15',
+                  mongo: 'error',
+                  message,
+                  hint: isTls
+                    ? 'Atlas Network Access must allow 0.0.0.0/0'
+                    : undefined,
+                }),
+              );
+            });
+            return connection;
+          },
           autoIndex: true,
         };
       },
