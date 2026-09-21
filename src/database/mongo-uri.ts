@@ -14,12 +14,55 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
     configuredUri === '' ||
     process.env.USE_IN_MEMORY_MONGO === 'true';
 
+  const nodeEnv = process.env.NODE_ENV ?? 'development';
+
   if (!useMemory) {
-    logger.log(`Using external MongoDB`);
+    let host = '(unparsed)';
+    try {
+      host = new URL(configuredUri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;
+    } catch {
+      host = '(invalid-uri)';
+    }
+    const isLocalHost =
+      host === '127.0.0.1' ||
+      host === 'localhost' ||
+      host === '::1' ||
+      host === '0.0.0.0';
+
+    // #region agent log
+    console.log(
+      '[boot]',
+      JSON.stringify({
+        hypothesisId: 'H8',
+        mongoMode: 'external',
+        mongoHost: host,
+        isLocalHost,
+        nodeEnv,
+      }),
+    );
+    // #endregion
+
+    if (nodeEnv === 'production' && isLocalHost) {
+      // #region agent log
+      console.error(
+        '[boot-fatal]',
+        JSON.stringify({
+          hypothesisId: 'H8',
+          message:
+            'MONGODB_URI points at localhost — Render cannot reach your PC MongoDB. Use MongoDB Atlas (or any remote URI).',
+          mongoHost: host,
+        }),
+      );
+      // #endregion
+      throw new Error(
+        'MONGODB_URI must not be localhost in production. Use MongoDB Atlas (mongodb+srv://...).',
+      );
+    }
+
+    logger.log(`Using external MongoDB host=${host}`);
     return { uri: configuredUri, mode: 'external' };
   }
 
-  const nodeEnv = process.env.NODE_ENV ?? 'development';
   if (nodeEnv === 'production' && process.env.USE_IN_MEMORY_MONGO !== 'true') {
     // #region agent log
     console.error(
