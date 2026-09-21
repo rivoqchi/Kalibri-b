@@ -41,11 +41,25 @@ import { NotificationsModule } from './notifications/notifications.module.js';
       useFactory: async (config: ConfigService) => {
         const configured = config.getOrThrow<string>('mongodbUri');
         const { uri, mode } = await resolveMongoUri(configured);
+        // #region agent log
+        console.log(
+          '[boot]',
+          JSON.stringify({
+            hypothesisId: 'H14',
+            message: 'mongoose connect options',
+            mode,
+            family: 4,
+            serverSelectionTimeoutMS: 15_000,
+          }),
+        );
+        // #endregion
         return {
           uri,
           maxPoolSize: mode === 'memory' ? 10 : 50,
           minPoolSize: mode === 'memory' ? 1 : 5,
-          serverSelectionTimeoutMS: 5000,
+          // Render/Node 17+ may prefer IPv6; Atlas TLS often needs IPv4.
+          family: 4,
+          serverSelectionTimeoutMS: 15_000,
           autoIndex: true,
         };
       },
