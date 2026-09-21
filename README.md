@@ -41,7 +41,7 @@ Copy `.env.example` → `.env`. Key vars:
 | `PORT` | HTTP listen port |
 | `FRONTEND_URL` / `CORS_ORIGIN` | Frontend origin(s) for CORS (comma-separated) |
 | `SITE_URL` | Canonical base for SEO payloads |
-| `TELEGRAM_WEBAPP_URL` | HTTPS Mini App URL (falls back to `FRONTEND_URL`) |
+| `TELEGRAM_WEBAPP_URL` | HTTPS Mini App / Do'kon URL (falls back to `FRONTEND_URL`; production: `https://kalibri-f.vercel.app`) |
 | `MONGODB_URI` | Mongo connection, or `memory` for local |
 | `REDIS_URL` | Optional Redis (cache + Socket.IO adapter) |
 | `JWT_SECRET` | Auth signing key (**required in production**) |

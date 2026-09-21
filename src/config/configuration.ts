@@ -28,7 +28,10 @@ export default () => ({
     process.env.CORS_ORIGIN,
     process.env.FRONTEND_URL ?? defaultFrontend,
   ),
-  /** HTTPS URL for Telegram Mini App (web_app buttons). Falls back to FRONTEND_URL. */
+  /**
+   * HTTPS URL for Telegram Mini App / Do'kon (web_app + menu button).
+   * Falls back to FRONTEND_URL. Production: https://kalibri-f.vercel.app
+   */
   telegramWebAppUrl:
     process.env.TELEGRAM_WEBAPP_URL?.trim() ||
     process.env.FRONTEND_URL?.trim() ||

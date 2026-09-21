@@ -43,6 +43,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     return Boolean(this.bot && this.botUsername);
   }
 
+  /** Store Mini App root (Do'kon + chat menu). Profile lives under the same origin. */
   private miniAppUrl(): string {
     const base =
       this.config.get<string>('telegramWebAppUrl')?.replace(/\/$/, '') ||
@@ -50,9 +51,9 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       '';
     if (!base) {
       this.logger.warn('FRONTEND_URL / TELEGRAM_WEBAPP_URL not set');
-      return '/profile';
+      return '';
     }
-    return `${base}/profile`;
+    return `${base}/`;
   }
 
   /** Telegram Mini App / web_app / url buttons require HTTPS. */
@@ -170,7 +171,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     await ctx.reply(
       https
         ? "Do'konni oching — pastdagi Do'kon tugmasi Mini App:"
-        : "Mini App uchun TELEGRAM_WEBAPP_URL (HTTPS) kerak. Masalan: npm run tunnel:webapp",
+        : "Mini App uchun TELEGRAM_WEBAPP_URL (HTTPS) kerak. Masalan: https://kalibri-f.vercel.app",
       { reply_markup: await this.shopKeyboard(from.id) },
     );
   }
@@ -193,7 +194,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     const miniApp = this.miniAppUrl();
     if (!this.canUseWebAppButton(miniApp)) {
       this.logger.warn(
-        `Mini App HTTPS emas (${miniApp}). TELEGRAM_WEBAPP_URL ga cloudflared tunnel URL qo‘ying.`,
+        `Mini App HTTPS emas (${miniApp || 'empty'}). TELEGRAM_WEBAPP_URL=https://kalibri-f.vercel.app qo‘ying.`,
       );
     } else {
       this.logger.log(`Mini App URL: ${miniApp}`);
