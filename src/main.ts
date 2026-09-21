@@ -105,7 +105,7 @@ async function bootstrap() {
     const app = await NestFactory.create(
       AppModule,
       new ExpressAdapter(expressApp),
-      { bufferLogs: true },
+      { bufferLogs: true, abortOnError: false },
     );
 
     // #region agent log
