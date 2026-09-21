@@ -19,6 +19,33 @@ async function isPortInUse(port: number): Promise<boolean> {
 }
 
 async function bootstrap() {
+  // #region agent log
+  const bootPayload = {
+    sessionId: '411458',
+    runId: process.env.DEBUG_RUN_ID ?? 'render-boot',
+    hypothesisId: 'H1',
+    location: 'main.ts:bootstrap',
+    message: 'bootstrap start',
+    data: {
+      nodeEnv: process.env.NODE_ENV ?? null,
+      portEnv: process.env.PORT ?? null,
+      hasJwtSecret: Boolean(process.env.JWT_SECRET?.trim()),
+      hasMongo: Boolean(process.env.MONGODB_URI?.trim()),
+      argv0: process.argv[1] ?? null,
+    },
+    timestamp: Date.now(),
+  };
+  console.log('[boot]', JSON.stringify(bootPayload.data));
+  fetch('http://127.0.0.1:7898/ingest/841f1275-974c-4ae8-9d0d-4af60275142b', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Debug-Session-Id': '411458',
+    },
+    body: JSON.stringify(bootPayload),
+  }).catch(() => {});
+  // #endregion
+
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
@@ -29,6 +56,18 @@ async function bootstrap() {
     'http://localhost:3000',
   ];
   const nodeEnv = config.get<string>('nodeEnv') ?? 'development';
+
+  // #region agent log
+  console.log(
+    '[boot]',
+    JSON.stringify({
+      hypothesisId: 'H2',
+      resolvedPort: port,
+      nodeEnv,
+      corsCount: corsOrigins.length,
+    }),
+  );
+  // #endregion
 
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(compression());
@@ -76,9 +115,28 @@ async function bootstrap() {
     throw error;
   }
 
+  // #region agent log
+  console.log(
+    '[boot]',
+    JSON.stringify({ hypothesisId: 'H1', listening: true, port }),
+  );
+  // #endregion
   console.log(`Kalibri API listening on port ${port}`);
   console.log(`Realtime namespace: /realtime (CORS: ${corsOrigins.join(', ')})`);
 }
 
-
-await bootstrap();
+try {
+  await bootstrap();
+} catch (error) {
+  // #region agent log
+  console.error(
+    '[boot-fatal]',
+    JSON.stringify({
+      hypothesisId: 'H3',
+      name: error instanceof Error ? error.name : 'unknown',
+      message: error instanceof Error ? error.message : String(error),
+    }),
+  );
+  // #endregion
+  throw error;
+}
