@@ -1,3 +1,5 @@
+import { sanitizeMongoUri } from '../database/sanitize-mongo-uri.js';
+
 function splitOrigins(raw: string | undefined, fallback: string): string[] {
   const source = raw?.trim() || fallback;
   return source
@@ -38,7 +40,7 @@ export default () => ({
     defaultFrontend,
   siteUrl: process.env.SITE_URL ?? defaultFrontend,
   seedDemoCatalog: process.env.SEED_DEMO_CATALOG === 'true',
-  mongodbUri: process.env.MONGODB_URI ?? 'memory',
+  mongodbUri: sanitizeMongoUri(process.env.MONGODB_URI) || 'memory',
   redisUrl: process.env.REDIS_URL ?? '',
   cloudflare: {
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',

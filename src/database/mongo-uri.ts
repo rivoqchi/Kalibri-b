@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import {
+  redactMongoUriForLog,
+  sanitizeMongoUri,
+} from './sanitize-mongo-uri.js';
 
 const logger = new Logger('MongoBootstrap');
 
@@ -9,19 +13,19 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
   uri: string;
   mode: 'external' | 'memory';
 }> {
+  const uri = sanitizeMongoUri(configuredUri);
   const useMemory =
-    configuredUri === 'memory' ||
-    configuredUri === '' ||
+    uri === 'memory' ||
+    uri === '' ||
     process.env.USE_IN_MEMORY_MONGO === 'true';
 
   const nodeEnv = process.env.NODE_ENV ?? 'development';
 
   if (!useMemory) {
     const schemeOk =
-      configuredUri.startsWith('mongodb://') ||
-      configuredUri.startsWith('mongodb+srv://');
+      uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://');
     if (!schemeOk) {
-      const preview = configuredUri.slice(0, 24);
+      const uriStartsWith = redactMongoUriForLog(uri).slice(0, 20);
       console.error(
         '[boot]',
         JSON.stringify({
@@ -29,18 +33,19 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
           mongo: 'invalid_scheme',
           message:
             'MONGODB_URI must start with mongodb:// or mongodb+srv://. Nest will start but Mongo stays down — Telegram handlers that need DB will fail until fixed.',
-          preview,
+          uriStartsWith,
+          schemeOk: false,
         }),
       );
       logger.error(
-        `Invalid MONGODB_URI scheme (expected mongodb:// or mongodb+srv://). Got prefix: ${preview}`,
+        `Invalid MONGODB_URI scheme (expected mongodb:// or mongodb+srv://). uriStartsWith=${uriStartsWith} schemeOk=false`,
       );
       // Do not throw — keep Nest + Telegram polling alive; health reports mongo:down.
     }
 
     let host = '(unparsed)';
     try {
-      host = new URL(configuredUri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;
+      host = new URL(uri.replace(/^mongodb(\+srv)?:/, 'http:')).hostname;
     } catch {
       host = '(invalid-uri)';
     }
@@ -81,7 +86,7 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
     }
 
     logger.log(`Using external MongoDB host=${host}`);
-    return { uri: configuredUri, mode: 'external' };
+    return { uri, mode: 'external' };
   }
 
   if (nodeEnv === 'production' && process.env.USE_IN_MEMORY_MONGO !== 'true') {
@@ -92,7 +97,8 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
         hypothesisId: 'H7',
         message:
           'MONGODB_URI must be a real MongoDB connection string in production (memory mode OOMs on Render).',
-        configuredUri: configuredUri || '(empty)',
+        uriStartsWith: redactMongoUriForLog(uri || '(empty)').slice(0, 20),
+        schemeOk: false,
       }),
     );
     // #endregion
@@ -102,10 +108,10 @@ export async function resolveMongoUri(configuredUri: string): Promise<{
   }
 
   memoryServer = await MongoMemoryServer.create();
-  const uri = memoryServer.getUri('kalibri_texnika');
-  logger.warn(`Using in-memory MongoDB at ${uri}`);
+  const memoryUri = memoryServer.getUri('kalibri_texnika');
+  logger.warn(`Using in-memory MongoDB at ${memoryUri}`);
 
-  return { uri, mode: 'memory' };
+  return { uri: memoryUri, mode: 'memory' };
 }
 
 export async function stopMemoryMongo(): Promise<void> {

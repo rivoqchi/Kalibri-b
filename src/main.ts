@@ -1,4 +1,8 @@
 import { createServer } from 'node:http';
+import {
+  redactMongoUriForLog,
+  sanitizeMongoUri,
+} from './database/sanitize-mongo-uri.js';
 
 type BootState = {
   ready: boolean;
@@ -38,7 +42,7 @@ const httpServer = createServer((req, res) => {
         error: bootState.error,
         hint: bootState.hint,
         hasJwtSecret: Boolean(process.env.JWT_SECRET?.trim()),
-        hasMongoUri: Boolean(process.env.MONGODB_URI?.trim()),
+        hasMongoUri: Boolean(sanitizeMongoUri(process.env.MONGODB_URI)),
         earlyWrapper: true,
         timestamp: new Date().toISOString(),
       }),
@@ -62,8 +66,8 @@ await new Promise<void>((resolve, reject) => {
 });
 
 // #region agent log
-const mongoUri = process.env.MONGODB_URI?.trim() ?? '';
-const mongoSchemeOk =
+const mongoUri = sanitizeMongoUri(process.env.MONGODB_URI);
+const schemeOk =
   !mongoUri ||
   mongoUri === 'memory' ||
   mongoUri.startsWith('mongodb://') ||
@@ -77,7 +81,8 @@ console.log(
     beforeNestImport: true,
     hasJwtSecret: Boolean(process.env.JWT_SECRET?.trim()),
     hasMongoUri: Boolean(mongoUri),
-    mongoSchemeOk,
+    uriStartsWith: redactMongoUriForLog(mongoUri).slice(0, 20),
+    schemeOk,
     hasTelegramBotToken: Boolean(process.env.TELEGRAM_BOT_TOKEN?.trim()),
     hasTelegramWebAppUrl: Boolean(
       process.env.TELEGRAM_WEBAPP_URL?.trim() ||
