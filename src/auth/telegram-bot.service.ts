@@ -19,7 +19,11 @@ const SEND_CODE_TEXT = 'Kod yuborish';
 const SHOP_TEXT = "Do'kon";
 const BLOCKED_TEXT = 'Bloklangansiz.';
 const DB_DOWN_TEXT =
-  "Server vaqtincha ma'lumotlar bazasiga ulana olmayapti. Keyinroq urinib ko'ring.";
+  "Server vaqtincha ma'lumotlar bazasiga ulana olmayapti (MongoDB). Keyinroq urinib ko'ring.";
+
+/** After 409 Conflict: long backoff, few attempts, then stop fighting the other instance. */
+const CONFLICT_MAX_RETRIES = 3;
+const CONFLICT_BACKOFF_MS = 90_000;
 
 @Injectable()
 export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
@@ -28,6 +32,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
   private botUsername: string | null = null;
   private polling = false;
   private stopRequested = false;
+  private conflictRetries = 0;
   /** Telegram often sends /start twice when opening the bot — ignore duplicates. */
   private lastStartAt = new Map<number, number>();
 
@@ -243,6 +248,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
       this.tgWarn(
         'boot skip — TELEGRAM_BOT_TOKEN missing. Set it in Render Environment.',
       );
+      return;
+    }
+
+    const pollingEnabled = this.config.get<boolean>('telegramBotPolling');
+    if (!pollingEnabled) {
+      this.tgLog('polling disabled (TELEGRAM_BOT_POLLING=false)');
       return;
     }
 
@@ -491,8 +502,32 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async handlePollingConflict(bot: Bot, detail: string): Promise<void> {
+    this.conflictRetries += 1;
+    const attempt = this.conflictRetries;
+    if (attempt > CONFLICT_MAX_RETRIES) {
+      this.tgError(
+        `polling STOPPED after ${CONFLICT_MAX_RETRIES}×409 Conflict — only one getUpdates allowed per token. ` +
+          `Another process is polling (local npm run start:dev and/or a second Render instance). ` +
+          `Stop the other instance, or set TELEGRAM_BOT_POLLING=false on the process that must not poll. ` +
+          `This process will not retry until restart. ${detail}`,
+      );
+      this.polling = false;
+      return;
+    }
+
+    this.tgError(
+      `polling stopped: 409 Conflict (retry ${attempt}/${CONFLICT_MAX_RETRIES} in ${CONFLICT_BACKOFF_MS / 1000}s) — ` +
+        `only one getUpdates allowed per token. Stop local start:dev or the other Render instance. ${detail}`,
+    );
+    if (!this.stopRequested && this.bot === bot) {
+      await new Promise((r) => setTimeout(r, CONFLICT_BACKOFF_MS));
+      void this.startPollingWithRetry(bot);
+    }
+  }
+
   private async startPollingWithRetry(bot: Bot) {
-    // Keep retrying in production — Render cold start + Telegram timeouts are common.
+    // Keep retrying getMe in production — Render cold start + Telegram timeouts are common.
     const maxAttempts = 30;
     let lastError: unknown;
 
@@ -523,6 +558,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
           .start({
             onStart: async () => {
               this.polling = true;
+              this.conflictRetries = 0;
               this.tgLog(`polling active @${this.botUsername}`);
               agentDebugLog({
                 hypothesisId: 'F',
@@ -552,14 +588,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
             this.polling = false;
             const detail = this.formatTelegramError(error);
             if (error instanceof GrammyError && error.error_code === 409) {
-              this.tgError(
-                `polling stopped: 409 Conflict — only one getUpdates allowed per token. ${detail}`,
-              );
-              // Retry after delay in case the other instance died.
-              if (!this.stopRequested && this.bot === bot) {
-                await new Promise((r) => setTimeout(r, 10_000));
-                void this.startPollingWithRetry(bot);
-              }
+              await this.handlePollingConflict(bot, detail);
               return;
             }
             this.tgError(`polling stopped: ${detail}`, error);
@@ -577,6 +606,10 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
             `boot fail — TELEGRAM_BOT_TOKEN invalid (401). Check Render env. ${detail}`,
           );
           break;
+        }
+        if (error instanceof GrammyError && error.error_code === 409) {
+          await this.handlePollingConflict(bot, detail);
+          return;
         }
         this.tgWarn(
           `getMe attempt ${attempt}/${maxAttempts} failed: ${detail}`,

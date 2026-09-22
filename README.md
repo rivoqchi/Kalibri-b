@@ -45,7 +45,8 @@ Copy `.env.example` → `.env`. Key vars:
 | `MONGODB_URI` | Mongo connection, or `memory` for local |
 | `REDIS_URL` | Optional Redis (cache + Socket.IO adapter) |
 | `JWT_SECRET` | Auth signing key (**required in production**) |
-| `TELEGRAM_BOT_TOKEN` | Bot API token |
+| `TELEGRAM_BOT_TOKEN` | Bot API token (only one process may poll) |
+| `TELEGRAM_BOT_POLLING` | `getUpdates` on/off; prod default true, dev default false |
 | `CLOUDFLARE_R2_*` | Media upload / public CDN |
 
 See `.env.example` for the full list and comments.

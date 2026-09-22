@@ -50,6 +50,11 @@ export default () => ({
   },
   cacheTtlSeconds: parseInt(process.env.CACHE_TTL_SECONDS ?? '60', 10),
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN ?? '',
+  /**
+   * Long-polling getUpdates. Production default true; development default false
+   * so local start:dev does not steal the token from Render.
+   */
+  telegramBotPolling: resolveTelegramBotPolling(),
   jwtSecret: resolveJwtSecret(),
   adminPhone: process.env.ADMIN_PHONE ?? '+998947932005',
   superAdminPhone:
@@ -72,6 +77,14 @@ function resolvePingEnabled(): boolean {
   const raw = process.env.PING_ENABLED?.trim().toLowerCase();
   if (raw === 'true' || raw === '1') return true;
   if (raw === 'false' || raw === '0') return false;
+  return (process.env.NODE_ENV ?? 'development') === 'production';
+}
+
+function resolveTelegramBotPolling(): boolean {
+  const raw = process.env.TELEGRAM_BOT_POLLING?.trim().toLowerCase();
+  if (raw === 'true' || raw === '1') return true;
+  if (raw === 'false' || raw === '0') return false;
+  // Production: poll by default. Development: off so local API does not fight Render.
   return (process.env.NODE_ENV ?? 'development') === 'production';
 }
 
