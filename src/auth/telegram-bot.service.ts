@@ -114,7 +114,7 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     return true;
   }
 
-  /** After phone is saved: Kod yuborish + Do'kon (Mini App when TELEGRAM_WEBAPP_URL is HTTPS). */
+  /** Kod yuborish + Do'kon (Mini App when TELEGRAM_WEBAPP_URL is HTTPS). Phone not required. */
   private async shopKeyboard(_telegramId?: number) {
     const keyboard = new Keyboard().text(SEND_CODE_TEXT).row();
     const url = this.miniAppUrl();
@@ -176,11 +176,12 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
     if (!from) return;
     if (await this.rejectIfBlocked(ctx)) return;
 
-    const existing = await this.usersService.findByTelegramId(from.id);
-    if (!existing?.phone) {
-      await ctx.reply(PHONE_TEXT, { reply_markup: this.phoneKeyboard() });
-      return;
-    }
+    await this.authService.ensureUserFromTelegram({
+      telegramId: from.id,
+      username: from.username,
+      firstName: from.first_name,
+      lastName: from.last_name,
+    });
 
     const url = this.miniAppUrl();
     const https = this.canUseWebAppButton(url);
@@ -336,22 +337,29 @@ export class TelegramBotService implements OnModuleInit, OnModuleDestroy {
 
         if (await this.rejectIfBlocked(ctx)) return;
 
-        const existing = ctx.from
-          ? await this.usersService.findByTelegramId(ctx.from.id)
-          : null;
+        const from = ctx.from;
+        if (!from) return;
 
-        if (existing?.phone && ctx.from) {
+        await this.authService.ensureUserFromTelegram({
+          telegramId: from.id,
+          username: from.username,
+          firstName: from.first_name,
+          lastName: from.last_name,
+        });
+
+        const existing = await this.usersService.findByTelegramId(from.id);
+
+        if (existing?.phone) {
           await ctx.reply(
             "Telefon saqlangan. Kod oling yoki Do'konni oching.",
-            { reply_markup: await this.shopKeyboard(ctx.from.id) },
+            { reply_markup: await this.shopKeyboard(from.id) },
           );
           return;
         }
 
-        await ctx.reply(
-          'Boshlash uchun telefon raqamingizni yuboring (faqat bir marta).',
-          { reply_markup: this.phoneKeyboard() },
-        );
+        await ctx.reply("Kod oling yoki Do'konni oching.", {
+          reply_markup: await this.shopKeyboard(from.id),
+        });
       });
     });
 

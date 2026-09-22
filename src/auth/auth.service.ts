@@ -150,10 +150,38 @@ export class AuthService {
 
   async issueSessionForTelegramId(telegramId: number) {
     const user = await this.usersService.findByTelegramId(telegramId);
-    if (!user?.phone) {
-      throw new BadRequestException('Telefon');
+    if (!user) {
+      throw new BadRequestException('User');
     }
     return this.issueSession(user);
+  }
+
+  /**
+   * Upsert user from Telegram identity. Phone is optional (shop / Mini App).
+   * Preserves existing phone and role via persistRole.
+   */
+  async ensureUserFromTelegram(input: {
+    telegramId: number;
+    username?: string;
+    firstName: string;
+    lastName?: string;
+  }) {
+    const existing = await this.usersService.findByTelegramId(input.telegramId);
+    this.assertNotBlocked(existing);
+    const phone = normalizePhone(existing?.phone) ?? null;
+    const role = this.persistRole(phone, existing?.role);
+    const user = await this.usersService.upsertFromTelegram({
+      telegramId: input.telegramId,
+      username: input.username,
+      firstName: input.firstName,
+      lastName: input.lastName ?? '',
+      phone,
+      role,
+    });
+    return {
+      id: String(user._id),
+      phone: user.phone ?? null,
+    };
   }
 
   async verifyTelegramCode(code: string) {
